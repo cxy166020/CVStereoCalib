@@ -33,7 +33,7 @@ int main(int argc, char** argv)
       return 0;
     }
   
-  if(ImNameL != ImNameR)
+  if(ImSetSizeL != ImSetSizeR)
     {
       std::cerr << "Unmatched number of images in left and right set" << std::endl; 
       return 0;

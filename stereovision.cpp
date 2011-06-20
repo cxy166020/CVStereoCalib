@@ -53,6 +53,11 @@ int StereoVision::calibrationAddSample(IplImage* imageLeft,IplImage* imageRight)
             CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_NORMALIZE_IMAGE
         );
 
+	// --------------------------------------------------------- //
+	printf("%d\n", result);
+	printf("%d\n", cornersDetected);
+	// --------------------------------------------------------- //
+
         if(result && cornersDetected == cornersN){
 
 

@@ -20,3 +20,7 @@ stereovision.o : stereovision.h stereovision.cpp
 
 CommandlineUtils.o : CommandlineUtils.h CommandlineUtils.cpp
 	$(CC) $(CFLAGS) $^
+
+
+clean:
+	rm *.o $(PROG)
