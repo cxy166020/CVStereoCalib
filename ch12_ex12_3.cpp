@@ -44,7 +44,7 @@ using namespace std;
 // matrix separately) stereo. Calibrate the cameras and display the
 // rectified results along with the computed disparity images.
 //
-static void StereoCalib(IplImage** ImSetL, IplImage** ImSetR, 
+static void StereoCalib(IplImage** ImSetL, IplImage** ImSetR, int NumOfIm 
 			int nx, int ny, int useUncalibrated)
 {
   int displayCorners  = 0;
@@ -59,7 +59,7 @@ static void StereoCalib(IplImage** ImSetL, IplImage** ImSetR,
   const float squareSize = 1.f; 
 
 
-  int i, j, lr, nframes, n = nx*ny, N = 0;
+  int i, j, lr, idx, nframes, n = nx*ny, N = 0;
 
   vector<CvPoint3D32f> objectPoints;
   vector<CvPoint2D32f> points[2];
@@ -83,27 +83,23 @@ static void StereoCalib(IplImage** ImSetL, IplImage** ImSetR,
   CvMat _F = cvMat(3, 3, CV_64F, F );
 
 
-  if( displayCorners )
-    cvNamedWindow( "corners", 1 );
+  // if( displayCorners )
+  //   cvNamedWindow( "corners", 1 );
 
-  for(i=0;;i++)
+  for(i=0; i<2*NumOfIm; i++)
     {
-      char buf[1024];
       int count = 0, result=0;
-      lr = i % 2;
+      
+      idx = i/2;
+      lr  = i%2;
+      
       vector<CvPoint2D32f>& pts = points[lr];
-      if( !fgets( buf, sizeof(buf)-3, f ))
-	break;
-      size_t len = strlen(buf);
-      while( len > 0 && isspace(buf[len-1]))
-	buf[--len] = '\0';
-      if( buf[0] == '#')
-	continue;
-      IplImage* img = cvLoadImage( buf, 0 );
-      if( !img )
-	break;
+      
+      IplImage* img = (lr==0) ? ImSetL[idx] : ImSetR[idx]; 
+            
       imageSize = cvGetSize(img);
       imageNames[lr].push_back(buf);
+      
       //FIND CHESSBOARDS AND CORNERS THEREIN:
       for( int s = 1; s <= maxScale; s++ )
         {
@@ -129,23 +125,25 @@ static void StereoCalib(IplImage** ImSetL, IplImage** ImSetR,
 	  if( result )
 	    break;
         }
-      if( displayCorners )
-        {
-	  printf("%s\n", buf);
-	  IplImage* cimg = cvCreateImage( imageSize, 8, 3 );
-	  cvCvtColor( img, cimg, CV_GRAY2BGR );
-	  cvDrawChessboardCorners( cimg, cvSize(nx, ny), &temp[0],
-				   count, result );
-	  cvShowImage( "corners", cimg );
-	  cvReleaseImage( &cimg );
-	  if( cvWaitKey(0) == 27 ) //Allow ESC to quit
-	    exit(-1);
-        }
-      else
-	putchar('.');
+      // if( displayCorners )
+      //   {
+      // 	  printf("%s\n", buf);
+      // 	  IplImage* cimg = cvCreateImage( imageSize, 8, 3 );
+      // 	  cvCvtColor( img, cimg, CV_GRAY2BGR );
+      // 	  cvDrawChessboardCorners( cimg, cvSize(nx, ny), &temp[0],
+      // 				   count, result );
+      // 	  cvShowImage( "corners", cimg );
+      // 	  cvReleaseImage( &cimg );
+      // 	  if( cvWaitKey(0) == 27 ) //Allow ESC to quit
+      // 	    exit(-1);
+      //   }
+      // else
+      // 	putchar('.');
+
       N = pts.size();
       pts.resize(N + n, cvPoint2D32f(0,0));
       active[lr].push_back((uchar)result);
+
       //assert( result != 0 );
       if( result )
         {
@@ -156,13 +154,16 @@ static void StereoCalib(IplImage** ImSetL, IplImage** ImSetR,
 					     30, 0.01) );
 	  copy( temp.begin(), temp.end(), pts.begin() + N );
         }
-      cvReleaseImage( &img );
+      // cvReleaseImage( &img );
     }
-  fclose(f);
-  printf("\n");
+ 
+ 
   // HARVEST CHESSBOARD 3D OBJECT POINT LIST:
-  nframes = active[0].size();//Number of good chessboads found
+  //Number of good chessboads found
+  nframes = active[0].size();
+
   objectPoints.resize(nframes*n);
+
   for( i = 0; i < ny; i++ )
     for( j = 0; j < nx; j++ )
       objectPoints[i*nx + j] =
@@ -314,57 +315,55 @@ static void StereoCalib(IplImage** ImSetL, IplImage** ImSetR,
       BMState->uniquenessRatio=15;
       for( i = 0; i < nframes; i++ )
         {
-	  IplImage* img1=cvLoadImage(imageNames[0][i].c_str(),0);
-	  IplImage* img2=cvLoadImage(imageNames[1][i].c_str(),0);
-	  if( img1 && img2 )
-            {
-	      CvMat part;
-	      cvRemap( img1, img1r, mx1, my1 );
-	      cvRemap( img2, img2r, mx2, my2 );
-	      if( !isVerticalStereo || useUncalibrated != 0 )
-                {
-		  // When the stereo camera is oriented vertically,
-		  // useUncalibrated==0 does not transpose the
-		  // image, so the epipolar lines in the rectified
-		  // images are vertical. Stereo correspondence
-		  // function does not support such a case.
-		  cvFindStereoCorrespondenceBM( img1r, img2r, disp,
-						BMState);
-		  cvNormalize( disp, vdisp, 0, 256, CV_MINMAX );
-		  cvNamedWindow( "disparity" );
-		  cvShowImage( "disparity", vdisp );
-                }
-	      if( !isVerticalStereo )
-                {
-		  cvGetCols( pair, &part, 0, imageSize.width );
-		  cvCvtColor( img1r, &part, CV_GRAY2BGR );
-		  cvGetCols( pair, &part, imageSize.width,
-			     imageSize.width*2 );
-		  cvCvtColor( img2r, &part, CV_GRAY2BGR );
-		  for( j = 0; j < imageSize.height; j += 16 )
-		    cvLine( pair, cvPoint(0,j),
-			    cvPoint(imageSize.width*2,j),
-			    CV_RGB(0,255,0));
-                }
-	      else
-                {
-		  cvGetRows( pair, &part, 0, imageSize.height );
-		  cvCvtColor( img1r, &part, CV_GRAY2BGR );
-		  cvGetRows( pair, &part, imageSize.height,
-			     imageSize.height*2 );
-		  cvCvtColor( img2r, &part, CV_GRAY2BGR );
-		  for( j = 0; j < imageSize.width; j += 16 )
-		    cvLine( pair, cvPoint(j,0),
-			    cvPoint(j,imageSize.height*2),
-			    CV_RGB(0,255,0));
-                }
-	      cvShowImage( "rectified", pair );
-	      if( cvWaitKey() == 27 )
-		break;
-            }
-	  cvReleaseImage( &img1 );
-	  cvReleaseImage( &img2 );
-        }
+	  IplImage* img1= ImSetL[i];//cvLoadImage(imageNames[0][i].c_str(),0);
+	  IplImage* img2= ImSetR[i];// cvLoadImage(imageNames[1][i].c_str(),0);
+	  
+	 
+	  CvMat part;
+	  cvRemap( img1, img1r, mx1, my1 );
+	  cvRemap( img2, img2r, mx2, my2 );
+	  if( !isVerticalStereo || useUncalibrated != 0 )
+	    {
+	      // When the stereo camera is oriented vertically,
+	      // useUncalibrated==0 does not transpose the
+	      // image, so the epipolar lines in the rectified
+	      // images are vertical. Stereo correspondence
+	      // function does not support such a case.
+	      cvFindStereoCorrespondenceBM( img1r, img2r, disp,
+					    BMState);
+	      cvNormalize( disp, vdisp, 0, 256, CV_MINMAX );
+	      cvNamedWindow( "disparity" );
+	      cvShowImage( "disparity", vdisp );
+	    }
+	  if( !isVerticalStereo )
+	    {
+	      cvGetCols( pair, &part, 0, imageSize.width );
+	      cvCvtColor( img1r, &part, CV_GRAY2BGR );
+	      cvGetCols( pair, &part, imageSize.width,
+			 imageSize.width*2 );
+	      cvCvtColor( img2r, &part, CV_GRAY2BGR );
+	      for( j = 0; j < imageSize.height; j += 16 )
+		cvLine( pair, cvPoint(0,j),
+			cvPoint(imageSize.width*2,j),
+			CV_RGB(0,255,0));
+	    }
+	  else
+	    {
+	      cvGetRows( pair, &part, 0, imageSize.height );
+	      cvCvtColor( img1r, &part, CV_GRAY2BGR );
+	      cvGetRows( pair, &part, imageSize.height,
+			 imageSize.height*2 );
+	      cvCvtColor( img2r, &part, CV_GRAY2BGR );
+	      for( j = 0; j < imageSize.width; j += 16 )
+		cvLine( pair, cvPoint(j,0),
+			cvPoint(j,imageSize.height*2),
+			CV_RGB(0,255,0));
+	    }
+	  // cvShowImage( "rectified", pair );
+	  // if( cvWaitKey() == 27 )
+	  // 	break;
+           
+	}
       cvReleaseStereoBMState(&BMState);
       cvReleaseMat( &mx1 );
       cvReleaseMat( &my1 );
