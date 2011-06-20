@@ -3,6 +3,10 @@
 #include <opencv/cv.h>
 
 #include "CommandlineUtils.h"
+#include "stereovision.h"
+
+IplImage** LoadImages(char** const ImName, int NumOfIm);
+void ReleaseImages(IplImage** ImSet, int NumOfIm);
 
 int main(int argc, char** argv)
 {
@@ -34,14 +38,42 @@ int main(int argc, char** argv)
       std::cerr << "Unmatched number of images in left and right set" << std::endl; 
       return 0;
     }
+
+  // Get board size
+  int BoardDimension = 0;
+  char** BoardSize = ArgList.GetArgsByOption("-s", BoardDimension);
+  
+  if(BoardDimension != 2)
+    {
+      std::cerr << "Only two dimensional checkerboard is supported!" << std::endl;
+      return 0;
+    }
+
+  int CornersX = atoi(BoardSize[0]);
+  int CornersY = atoi(BoardSize[1]);
   
   // Load images 
   IplImage** ImSetL = LoadImages(ImNameL, ImSetSizeL);
   IplImage** ImSetR = LoadImages(ImNameR, ImSetSizeR);
+  
+  int ImWidth  = ImSetL[0]->width;
+  int ImHeight = ImSetL[1]->height;
 
-
+  StereoVision sv(ImWidth, ImHeight);
+  
+  // Begin calibration
+  sv.calibrationStart(CornersX, CornersY);
   
   
+  // Add images to calibation data
+  for(int i=0; i<ImSetSizeL; i++)
+    {
+      sv.calibrationAddSample(ImSetL[i], ImSetR[i]);
+    }
+
+  // Finish calibration
+  sv.calibrationEnd();
+
 
   // Release images
   ReleaseImages(ImSetL, ImSetSizeL);
@@ -52,7 +84,7 @@ int main(int argc, char** argv)
 
 
 
-IplImage** LoadImages(const char** ImName, int NumOfIm)
+IplImage** LoadImages(char** const ImName, int NumOfIm)
 {
   IplImage** ImSet = new IplImage*[NumOfIm];
 
@@ -60,6 +92,8 @@ IplImage** LoadImages(const char** ImName, int NumOfIm)
     {
       ImSet[i] = cvLoadImage(ImName[i], CV_LOAD_IMAGE_UNCHANGED);
     }
+
+  return ImSet;
 }
 
 void ReleaseImages(IplImage** ImSet, int NumOfIm)
@@ -69,5 +103,5 @@ void ReleaseImages(IplImage** ImSet, int NumOfIm)
       cvReleaseImage(&(ImSet[i]));
     }
 
-  delete[] ImageSet;
+  delete[] ImSet;
 }

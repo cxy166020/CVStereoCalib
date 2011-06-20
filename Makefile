@@ -1,13 +1,13 @@
 CC = g++
-CFLAGS = -Wall
+CFLAGS = -Wall -c
 LDFLAGS = -lopencv_highgui -lopencv_core -lopencv_calib3d
 
 
 PROG = stereoCalib
-HDRS = stereovision.h
-SRCS = main.cpp stereovision.cpp
+HDRS = stereovision.h CommandlineUtils.h
+SRCS = main.cpp stereovision.cpp CommandlineUtils.cpp
 
-OBJS = $(SRCS:.c=.o)
+OBJS = main.o stereovision.o CommandlineUtils.o
 
 $(PROG) : $(OBJS)
 	$(CC) $(LDFLAGS) $(OBJS) -o $(PROG)
@@ -17,3 +17,6 @@ main.o : main.cpp
 
 stereovision.o : stereovision.h stereovision.cpp
 	$(CC) $(CFLAGS) $^ 
+
+CommandlineUtils.o : CommandlineUtils.h CommandlineUtils.cpp
+	$(CC) $(CFLAGS) $^
