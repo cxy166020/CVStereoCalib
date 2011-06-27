@@ -4,6 +4,7 @@
 
 #include "CommandlineUtils.h"
 #include "stereovision.h"
+#include "cv_book.h"
 
 IplImage** LoadImages(char** const ImName, int NumOfIm);
 void ReleaseImages(IplImage** ImSet, int NumOfIm);
@@ -38,6 +39,8 @@ int main(int argc, char** argv)
       std::cerr << "Unmatched number of images in left and right set" << std::endl; 
       return 0;
     }
+
+  int NumOfIm = ImSetSizeL;
 
   // Get board size
   int BoardDimension = 0;
@@ -74,6 +77,7 @@ int main(int argc, char** argv)
   // Finish calibration
   sv.calibrationEnd();
 
+  // StereoCalib(ImSetL, ImSetR, NumOfIm, 0.0, CornersX, CornersY, 1);
 
   // Release images
   ReleaseImages(ImSetL, ImSetSizeL);
