@@ -4,7 +4,6 @@
 
 #include "CommandlineUtils.h"
 #include "stereovision.h"
-#include "cv_book.h"
 
 IplImage** LoadImages(char** const ImName, int NumOfIm);
 void ReleaseImages(IplImage** ImSet, int NumOfIm);
@@ -21,6 +20,10 @@ int main(int argc, char** argv)
   // Get right image set
   int ImSetSizeR = 0;
   char** ImNameR = ArgList.GetArgsByOption("-r", ImSetSizeR);
+
+  // Get output name
+  int NameSize;
+  char** OutputName = ArgList.GetArgsByOption("-o", NameSize);
 
   if(ImNameL == NULL)
     {
@@ -40,7 +43,7 @@ int main(int argc, char** argv)
       return 0;
     }
 
-  int NumOfIm = ImSetSizeL;
+  // int NumOfIm = ImSetSizeL;
 
   // Get board size
   int BoardDimension = 0;
@@ -77,11 +80,16 @@ int main(int argc, char** argv)
   // Finish calibration
   sv.calibrationEnd();
 
+  // Write calibration result
+  sv.calibrationSave(OutputName[0]);
+
   // StereoCalib(ImSetL, ImSetR, NumOfIm, 0.0, CornersX, CornersY, 1);
 
   // Release images
   ReleaseImages(ImSetL, ImSetSizeL);
   ReleaseImages(ImSetR, ImSetSizeR);
+
+  
   
   return 0;
 }

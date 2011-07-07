@@ -7,8 +7,10 @@
 #include <opencv/cvaux.h>
 #include <opencv/highgui.h>
 
-using namespace std;
 #include <vector>
+#include <iostream>
+
+using namespace std;
 
 
 #define RESULT_OK   0
@@ -50,6 +52,9 @@ public:
     int calibrationLoad(const char* filename);
 
     int stereoProcess(CvArr* imageSrcLeft,CvArr* imageSrcRight);
+
+    int rectifyImage(const char* lImName, const char* rImName, 
+		     const char* lRectifiedName, const char* rRectifiedName);
 
     CvSize getImageSize(){return imageSize;}
     bool getCalibrationStarted(){return calibrationStarted;}

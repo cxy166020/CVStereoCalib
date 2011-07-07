@@ -55,6 +55,7 @@ int StereoVision::calibrationAddSample(IplImage* imageLeft,IplImage* imageRight)
 					   &ponintsTemp[lr][0], &cornersDetected,
 					   CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_NORMALIZE_IMAGE
 					   );
+      cout << "Detected corners: " << cornersDetected << endl;
 
       if(result && cornersDetected == cornersN){
 
@@ -211,6 +212,25 @@ int StereoVision::stereoProcess(CvArr* imageSrcLeft,CvArr* imageSrcRight){
   cvNormalize( imageDepth, imageDepthNormalized, 0, 256, CV_MINMAX );
 
   cvReleaseStereoBMState(&BMState);
+
+  return RESULT_OK;
+}
+
+
+int StereoVision::rectifyImage(const char* lImName, const char* rImName, 
+			       const char* lRectifiedName, const char* rRectifiedName)
+{
+  IplImage* lIm = cvLoadImage(lImName);
+  IplImage* rIm = cvLoadImage(rImName);
+  
+  IplImage* lRectified = cvCreateImage(cvSize(lIm->width, lIm->height), lIm->depth, lIm->nChannels);
+  IplImage* rRectified = cvCreateImage(cvSize(rIm->width, rIm->height), rIm->depth, rIm->nChannels);
+
+  cvRemap(lIm, lRectified, mx1, my1);
+  cvRemap(rIm, rRectified, mx2, my2);
+
+  cvSaveImage(lRectifiedName, lRectified);
+  cvSaveImage(rRectifiedName, rRectified);
 
   return RESULT_OK;
 }
