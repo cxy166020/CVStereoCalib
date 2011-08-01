@@ -59,10 +59,12 @@ int StereoVision::calibrationAddSample(IplImage* imageLeft,IplImage* imageRight)
 
       if(result && cornersDetected == cornersN){
 
+	IplImage *gray_image = cvCreateImage( cvGetSize(image[lr]), 8, 1 );
+	cvCvtColor( image[lr], gray_image, CV_BGR2GRAY );
 
 	//Calibration will suffer without subpixel interpolation
 	cvFindCornerSubPix(
-			   image[lr], &ponintsTemp[lr][0], cornersDetected,
+			   gray_image, &ponintsTemp[lr][0], cornersDetected,
 			   cvSize(11, 11), cvSize(-1,-1),
 			   cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,30, 0.01)
 			   );
