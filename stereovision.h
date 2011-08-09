@@ -19,48 +19,21 @@ using namespace std;
 class StereoVision
 {
 private:
-    //chesboard board corners X,Y, N = X*Y ,  number of corners = (number of cells - 1)
     int cornersX,cornersY,cornersN;
-    int sampleCount;
-    bool calibrationStarted;
-    bool calibrationDone;
 
     CvSize imageSize;
     int imageWidth;
     int imageHeight;
 
-    vector<CvPoint2D32f> ponintsTemp[2];
-    vector<CvPoint3D32f> objectPoints;
-    vector<CvPoint2D32f> points[2];
-    vector<int> npoints;
-
 public:
-    StereoVision(int imageWidth,int imageHeight);
+    StereoVision();
     ~StereoVision();
 
-    //matrices resulting from calibration (used for cvRemap to rectify images)
-    CvMat *mx1,*my1,*mx2,*my2;
+    void calibrationInit(int imageWidth,int imageHeight, 
+			 int cornersX, int cornersY);
 
-    CvMat* imagesRectified[2];
-    CvMat  *imageDepth,*imageDepthNormalized;
-
-    void calibrationStart(int cornersX,int cornersY);
-    int calibrationAddSample(IplImage* imageLeft,IplImage* imageRight);
-    int calibrationEnd();
-
-    int calibrationSave(const char* filename);
-    int calibrationLoad(const char* filename);
-
-    int stereoProcess(CvArr* imageSrcLeft,CvArr* imageSrcRight);
-
-    int rectifyImage(const char* lImName, const char* rImName, 
-		     const char* lRectifiedName, const char* rRectifiedName);
-
-    CvSize getImageSize(){return imageSize;}
-    bool getCalibrationStarted(){return calibrationStarted;}
-    bool getCalibrationDone(){return calibrationDone;}
-    int getSampleCount(){return sampleCount;}
-
+    int monoCalibrate(int ImSetSize, CvMat* intrinsic_matrix, 
+		      CvMat* distortion_coeffs, IplImage** ImSet);
 };
 
 #endif // STEREOVISION_H

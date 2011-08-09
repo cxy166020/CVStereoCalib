@@ -22,8 +22,8 @@ int main(int argc, char** argv)
   char** ImNameR = ArgList.GetArgsByOption("-r", ImSetSizeR);
 
   // Get output name
-  int NameSize;
-  char** OutputName = ArgList.GetArgsByOption("-o", NameSize);
+  // int NameSize;
+  // char** OutputName = ArgList.GetArgsByOption("-o", NameSize);
 
   if(ImNameL == NULL)
     {
@@ -65,31 +65,32 @@ int main(int argc, char** argv)
   int ImWidth  = ImSetL[0]->width;
   int ImHeight = ImSetL[1]->height;
 
-  StereoVision sv(ImWidth, ImHeight);
+  StereoVision sv;
+
+  CvMat* intrinsic_L = cvCreateMat(3,3,CV_32FC1);
+  CvMat* intrinsic_R = cvCreateMat(3,3,CV_32FC1); 
+
+  CvMat* distortion_L = cvCreateMat(4,1,CV_32FC1);
+  CvMat* distortion_R = cvCreateMat(4,1,CV_32FC1);
   
-  // Begin calibration
-  sv.calibrationStart(CornersX, CornersY);
+  // Initialize calibration
+  sv.calibrationInit(ImWidth, ImHeight, CornersX, CornersY);
   
-  
-  // Add images to calibation data
-  for(int i=0; i<ImSetSizeL; i++)
-    {
-      sv.calibrationAddSample(ImSetL[i], ImSetR[i]);
-    }
+  // Calibrate left image set
+  sv.monoCalibrate(ImSetSizeL, intrinsic_L, distortion_L, ImSetL);
+  sv.monoCalibrate(ImSEtSizeR, intrinsic_R, distortion_R, ImSetR);
 
-  // Finish calibration
-  sv.calibrationEnd();
-
-  // Write calibration result
-  sv.calibrationSave(OutputName[0]);
-
-  // StereoCalib(ImSetL, ImSetR, NumOfIm, 0.0, CornersX, CornersY, 1);
-
+ 
   // Release images
   ReleaseImages(ImSetL, ImSetSizeL);
   ReleaseImages(ImSetR, ImSetSizeR);
 
   
+  cvReleaseMat(&intrinsic_L);
+  cvReleaseMat(&intrinsic_R);
+
+  cvReleaseMat(&distortion_L);
+  cvReleaseMat(&distortion_R);
   
   return 0;
 }

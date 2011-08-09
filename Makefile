@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -Wall -c
+CFLAGS = -Wall -c -O2
 LDFLAGS = -lopencv_highgui -lopencv_core -lopencv_calib3d
 
 
@@ -13,7 +13,7 @@ OBJS = main.o stereovision.o CommandlineUtils.o
 ROBJ = rectify.o stereovision.o CommandlineUtils.o
 SOBJ = singleCalib.o CommandlineUtils.o
 
-PROJECT : $(PROG) $(RECT) $(SCAL)
+PROJECT : $(PROG) # $(RECT) $(SCAL)
 
 $(RECT) : $(ROBJ)
 	$(CC) $(LDFLAGS) $^ -o $@
