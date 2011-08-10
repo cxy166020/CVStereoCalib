@@ -39,6 +39,10 @@ public:
 
   int stereoCalibrate( const float squareSize, const int ImSetSize, 
 		       IplImage** ImSetL, IplImage** ImSetR );  
+
+  int calibrationSave(const char* filename);
+
+  int calibrationLoad(const char* filename);
 };
 
 #endif // STEREOVISION_H

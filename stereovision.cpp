@@ -98,11 +98,13 @@ int StereoVision::monoCalibrate(int ImSetSize, IplImage** ImSet, int lr)
     
       int found = cvFindChessboardCorners(image, board_sz, corners, &corner_count, 
 					  CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+
+      printf("corner_count = %d \n", corner_count);
       
       //Get Subpixel accuracy on those corners
       cvCvtColor(image, gray_image, CV_BGR2GRAY);
       cvFindCornerSubPix(gray_image, corners, corner_count, cvSize(11,11),cvSize(-1,-1),
-			 cvTermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.1 ));
+			 cvTermCriteria( CV_TERMCRIT_EPS+CV_TERMCRIT_ITER, 30, 0.001 ));
 
       // If we got a good board, add it to our data
       //
@@ -182,6 +184,8 @@ int StereoVision::monoCalibrate(int ImSetSize, IplImage** ImSet, int lr)
 int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize, 
 				   IplImage** ImSetL, IplImage** ImSetR )
 {
+  printf("Stereo calibration... \n");
+
   const int maxScale = 1;
   
   int  nframes, n = cornersX*cornersY, N = 0;
@@ -232,6 +236,9 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
 					    &temp[0], &count,
 					    CV_CALIB_CB_ADAPTIVE_THRESH |
 					    CV_CALIB_CB_NORMALIZE_IMAGE);
+
+	  printf("corners_count: %d\n", count);
+	  
 	  if( timg != img )
 	    {
 	      cvReleaseImage( &timg );
@@ -256,11 +263,16 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
 
       if( result )
         {
-	  //Calibration will suffer without subpixel interpolation
-	  cvFindCornerSubPix(img, &temp[0], count, cvSize(11, 11), cvSize(-1,-1),
-			     cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 30, 0.01));
+	  IplImage* gray_image = cvCreateImage(cvGetSize(img),8,1);
+	  cvCvtColor(img, gray_image, CV_BGR2GRAY);
+
+	  // Calibration will suffer without subpixel interpolation
+	  cvFindCornerSubPix(gray_image, &temp[0], count, cvSize(11, 11), cvSize(-1,-1),
+			     cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS, 30, 0.001));
 
 	  copy(temp.begin(), temp.end(), pts.begin() + N);
+
+	  cvReleaseImage(&gray_image);
         }
     }
   
@@ -383,35 +395,41 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
 //   return RESULT_OK;
 // }
 
-// int StereoVision::calibrationSave(const char* filename){
-//   if(!calibrationDone) return RESULT_FAIL;
-//   FILE* f =  fopen(filename,"wb");
-//   if(!f) return RESULT_FAIL;
-//   if(!fwrite(mx1->data.fl,sizeof(float),mx1->rows*mx1->cols,f)) return RESULT_FAIL;
-//   if(!fwrite(my1->data.fl,sizeof(float),my1->rows*my1->cols,f)) return RESULT_FAIL;
-//   if(!fwrite(mx2->data.fl,sizeof(float),mx2->rows*mx2->cols,f)) return RESULT_FAIL;
-//   if(!fwrite(my2->data.fl,sizeof(float),my2->rows*my2->cols,f)) return RESULT_FAIL;
-//   fclose(f);
-//   return RESULT_OK;
-// }
+int StereoVision::calibrationSave(const char* filename)
+{
+  FILE* f =  fopen(filename,"wb");
+  if(!f) return RESULT_FAIL;
+  if(!fwrite(intrinsic_L->data.fl,sizeof(float),intrinsic_L->rows*intrinsic_L->cols,f)) return RESULT_FAIL;
+  if(!fwrite(intrinsic_R->data.fl,sizeof(float),intrinsic_R->rows*intrinsic_R->cols,f)) return RESULT_FAIL;
+  if(!fwrite(distortion_L->data.fl,sizeof(float),distortion_L->rows*distortion_L->cols,f)) return RESULT_FAIL;
+  if(!fwrite(distortion_R->data.fl,sizeof(float),distortion_R->rows*distortion_R->cols,f)) return RESULT_FAIL;
+  fclose(f);
+  return RESULT_OK;
+}
 
 
-// int StereoVision::calibrationLoad(const char* filename){
-//   cvReleaseMat(&mx1);
-//   cvReleaseMat(&my1);
-//   cvReleaseMat(&mx2);
-//   cvReleaseMat(&my2);
-//   mx1 = cvCreateMat( imageSize.height,imageSize.width, CV_32F );
-//   my1 = cvCreateMat( imageSize.height,imageSize.width, CV_32F );
-//   mx2 = cvCreateMat( imageSize.height,imageSize.width, CV_32F );
-//   my2 = cvCreateMat( imageSize.height,imageSize.width, CV_32F );
-//   FILE* f =  fopen(filename,"rb");
-//   if(!f) return RESULT_FAIL;
-//   if(!fread(mx1->data.fl,sizeof(float),mx1->rows*mx1->cols,f)) return RESULT_FAIL;
-//   if(!fread(my1->data.fl,sizeof(float),my1->rows*my1->cols,f)) return RESULT_FAIL;
-//   if(!fread(mx2->data.fl,sizeof(float),mx2->rows*mx2->cols,f)) return RESULT_FAIL;
-//   if(!fread(my2->data.fl,sizeof(float),my2->rows*my2->cols,f)) return RESULT_FAIL;
-//   fclose(f);
-//   calibrationDone = true;
-//   return RESULT_OK;
-// }
+int StereoVision::calibrationLoad(const char* filename)
+{
+  if(!intrinsic_L)
+    intrinsic_L = cvCreateMat(3,3,CV_32FC1);
+  
+  if(!intrinsic_R)
+    intrinsic_R = cvCreateMat(3,3,CV_32FC1); 
+  
+  if(!distortion_L)
+    distortion_L = cvCreateMat(4,1,CV_32FC1);
+
+  if(!distortion_R)
+    distortion_R = cvCreateMat(4,1,CV_32FC1);
+
+
+  FILE* f =  fopen(filename,"rb");
+  if(!f) return RESULT_FAIL;
+  if(!fread(intrinsic_L->data.fl,sizeof(float),intrinsic_L->rows*intrinsic_L->cols,f)) return RESULT_FAIL;
+  if(!fread(intrinsic_R->data.fl,sizeof(float),intrinsic_R->rows*intrinsic_R->cols,f)) return RESULT_FAIL;
+  if(!fread(distortion_L->data.fl,sizeof(float),distortion_L->rows*distortion_L->cols,f)) return RESULT_FAIL;
+  if(!fread(distortion_R->data.fl,sizeof(float),distortion_R->rows*distortion_R->cols,f)) return RESULT_FAIL;
+  fclose(f);
+
+  return RESULT_OK;
+}

@@ -29,8 +29,8 @@ int main(int argc, char** argv)
   
 
   // Get output name
-  // int NameSize;
-  // char** OutputName = ArgList.GetArgsByOption("-o", NameSize);
+  int NameSize;
+  char** OutputName = ArgList.GetArgsByOption("-o", NameSize);
 
   if(ImNameL == NULL)
     {
@@ -84,12 +84,12 @@ int main(int argc, char** argv)
   // Calibrate stereo pair
   sv.stereoCalibrate(squareSize, ImSetSizeL, ImSetL, ImSetR);
 
+  // Output calibration result
+  sv.calibrationSave(OutputName[0]);
  
   // Release images
   ReleaseImages(ImSetL, ImSetSizeL);
   ReleaseImages(ImSetR, ImSetSizeR);
-
-  
 
   
   return 0;
