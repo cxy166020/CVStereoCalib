@@ -19,21 +19,26 @@ using namespace std;
 class StereoVision
 {
 private:
-    int cornersX,cornersY,cornersN;
+  int cornersX,cornersY,cornersN;
 
-    CvSize imageSize;
-    int imageWidth;
-    int imageHeight;
+  CvSize imageSize;
+  int imageWidth;
+  int imageHeight;
+
+  CvMat *intrinsic_L,  *intrinsic_R; 
+  CvMat *distortion_L, *distortion_R;
 
 public:
-    StereoVision();
-    ~StereoVision();
+  StereoVision();
+  ~StereoVision();
 
-    void calibrationInit(int imageWidth,int imageHeight, 
-			 int cornersX, int cornersY);
+  void calibrationInit(int imageWidth,int imageHeight, 
+		       int cornersX, int cornersY);
 
-    int monoCalibrate(int ImSetSize, CvMat* intrinsic_matrix, 
-		      CvMat* distortion_coeffs, IplImage** ImSet);
+  int monoCalibrate(int ImSetSize, IplImage** ImSet, int lr);
+
+  int stereoCalibrate( const float squareSize, const int ImSetSize, 
+		       IplImage** ImSetL, IplImage** ImSetR );  
 };
 
 #endif // STEREOVISION_H

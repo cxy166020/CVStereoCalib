@@ -10,6 +10,7 @@ void ReleaseImages(IplImage** ImSet, int NumOfIm);
 
 int main(int argc, char** argv)
 {
+  enum LEFT_RIGHT { LEFT=0, RIGHT=1 };
   
   CommandlineUtils ArgList(argc, argv);
 
@@ -20,6 +21,12 @@ int main(int argc, char** argv)
   // Get right image set
   int ImSetSizeR = 0;
   char** ImNameR = ArgList.GetArgsByOption("-r", ImSetSizeR);
+
+  // Get square size
+  int size_len;
+  char** squareSizeStr = ArgList.GetArgsByOption("-d", size_len);
+  float squareSize = atof(squareSizeStr[0]);
+  
 
   // Get output name
   // int NameSize;
@@ -67,18 +74,15 @@ int main(int argc, char** argv)
 
   StereoVision sv;
 
-  CvMat* intrinsic_L = cvCreateMat(3,3,CV_32FC1);
-  CvMat* intrinsic_R = cvCreateMat(3,3,CV_32FC1); 
-
-  CvMat* distortion_L = cvCreateMat(4,1,CV_32FC1);
-  CvMat* distortion_R = cvCreateMat(4,1,CV_32FC1);
-  
   // Initialize calibration
   sv.calibrationInit(ImWidth, ImHeight, CornersX, CornersY);
   
   // Calibrate left image set
-  sv.monoCalibrate(ImSetSizeL, intrinsic_L, distortion_L, ImSetL);
-  sv.monoCalibrate(ImSEtSizeR, intrinsic_R, distortion_R, ImSetR);
+  sv.monoCalibrate(ImSetSizeL, ImSetL, LEFT);
+  sv.monoCalibrate(ImSetSizeR, ImSetR, RIGHT);
+
+  // Calibrate stereo pair
+  sv.stereoCalibrate(squareSize, ImSetSizeL, ImSetL, ImSetR);
 
  
   // Release images
@@ -86,11 +90,7 @@ int main(int argc, char** argv)
   ReleaseImages(ImSetR, ImSetSizeR);
 
   
-  cvReleaseMat(&intrinsic_L);
-  cvReleaseMat(&intrinsic_R);
 
-  cvReleaseMat(&distortion_L);
-  cvReleaseMat(&distortion_R);
   
   return 0;
 }

@@ -1,7 +1,46 @@
 #include "stereovision.h"
 
-StereoVision::StereoVision()  {}
-StereoVision::~StereoVision() {}
+StereoVision::StereoVision()  
+{
+  cornersX = 0;
+  cornersY = 0;
+  cornersN = 0;
+
+  imageWidth = 0;
+  imageHeight = 0;
+
+  intrinsic_L = NULL;
+  intrinsic_R = NULL; 
+  distortion_L = NULL;
+  distortion_R = NULL;
+}
+
+StereoVision::~StereoVision()
+{
+  if(intrinsic_L)
+    {
+      cvReleaseMat(&intrinsic_L);
+      intrinsic_L = NULL;
+    }
+
+  if(intrinsic_R)
+    {
+      cvReleaseMat(&intrinsic_R);
+      intrinsic_R = NULL;
+    }
+  
+  if(distortion_L)
+    {
+      cvReleaseMat(&distortion_L);
+      distortion_L = NULL;
+    }
+
+  if(distortion_R)
+    {
+      cvReleaseMat(&distortion_R);
+      distortion_R = NULL;
+    }
+}
 
 
 void StereoVision::calibrationInit(int imageWidth,int imageHeight, 
@@ -14,12 +53,27 @@ void StereoVision::calibrationInit(int imageWidth,int imageHeight,
   this->cornersX = cornersX;
   this->cornersY = cornersY;
   this->cornersN = cornersX*cornersY;
+
+  if(!intrinsic_L)
+    intrinsic_L = cvCreateMat(3,3,CV_32FC1);
+  
+  if(!intrinsic_R)
+    intrinsic_R = cvCreateMat(3,3,CV_32FC1); 
+  
+  if(!distortion_L)
+    distortion_L = cvCreateMat(4,1,CV_32FC1);
+
+  if(!distortion_R)
+    distortion_R = cvCreateMat(4,1,CV_32FC1);
 }
 
 // User has to manage the memory of intrinsics and distortions 
-int StereoVision::monoCalibrate(int ImSetSize, CvMat* intrinsic_matrix, 
-				CvMat* distortion_coeffs, IplImage** ImSet)
+int StereoVision::monoCalibrate(int ImSetSize, IplImage** ImSet, int lr)
 {
+  
+  CvMat* intrinsic_matrix = (lr==0) ? intrinsic_L : intrinsic_R;
+  CvMat* distortion_coeffs = (lr==0) ? distortion_L : distortion_R;
+
   CvSize board_sz = cvSize(cornersX, cornersY);
   
   //ALLOCATE STORAGE
@@ -129,8 +183,8 @@ int StereoVision::monoCalibrate(int ImSetSize, CvMat* intrinsic_matrix,
 
 
 
-int StereoVision::stereoCalibrate(const float squareSize, const int ImSetSize, 
-				  IplImage** ImSetL, IplImage** ImSetR)
+int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize, 
+				   IplImage** ImSetL, IplImage** ImSetR )
 {
   const int maxScale = 1;
   
@@ -139,16 +193,16 @@ int StereoVision::stereoCalibrate(const float squareSize, const int ImSetSize,
   vector<CvPoint3D32f> objectPoints;
   vector<CvPoint2D32f> points[2];
   vector<int> npoints;
-  vector<uchar> active[2];
+  vector<unsigned char> active[2];
   vector<CvPoint2D32f> temp(n);
   
   // ARRAY AND VECTOR STORAGE:
-  double M1[3][3], M2[3][3], D1[5], D2[5];
+  // double M1[3][3], M2[3][3], D1[5], D2[5];
   double R[3][3], T[3], E[3][3], F[3][3];
-  CvMat _M1 = cvMat(3, 3, CV_64F, M1 );
-  CvMat _M2 = cvMat(3, 3, CV_64F, M2 );
-  CvMat _D1 = cvMat(1, 5, CV_64F, D1 );
-  CvMat _D2 = cvMat(1, 5, CV_64F, D2 );
+  // CvMat _M1 = cvMat(3, 3, CV_64F, M1 );
+  // CvMat _M2 = cvMat(3, 3, CV_64F, M2 );
+  // CvMat _D1 = cvMat(1, 5, CV_64F, D1 );
+  // CvMat _D2 = cvMat(1, 5, CV_64F, D2 );
   CvMat _R = cvMat(3, 3, CV_64F, R );
   CvMat _T = cvMat(3, 1, CV_64F, T );
   CvMat _E = cvMat(3, 3, CV_64F, E );
@@ -189,7 +243,7 @@ int StereoVision::stereoCalibrate(const float squareSize, const int ImSetSize,
 	  
 	  if( result || s == maxScale )
 	    {	  
-	      for( j = 0; j < count; j++ )
+	      for(int j=0; j<count; j++ )
 		{
 		  temp[j].x /= s;
 		  temp[j].y /= s;
@@ -202,7 +256,7 @@ int StereoVision::stereoCalibrate(const float squareSize, const int ImSetSize,
 
       N = pts.size();
       pts.resize(N + n, cvPoint2D32f(0,0));
-      active[lr].push_back((uchar)result);
+      active[lr].push_back((unsigned char)result);
 
       if( result )
         {
@@ -219,15 +273,21 @@ int StereoVision::stereoCalibrate(const float squareSize, const int ImSetSize,
   nframes = active[0].size();//Number of good chessboads found
   objectPoints.resize(nframes*n);
 
-  for( i = 0; i < cornersY; i++ )
-    for( j = 0; j < cornersX; j++ )
-      objectPoints[i*cornersX + j] =
-        cvPoint3D32f(i*squareSize, j*squareSize, 0);
-
-  for( i = 1; i < nframes; i++ )
-    copy( objectPoints.begin(), objectPoints.begin() + n,
+  for(int i = 0; i < cornersY; i++ )
+    {
+      for(int j = 0; j < cornersX; j++ )
+	{
+	  objectPoints[i*cornersX + j] =
+	    cvPoint3D32f(i*squareSize, j*squareSize, 0);
+	}
+    }
+  
+  for(int i=1; i<nframes; i++ )
+    {
+      copy( objectPoints.begin(), objectPoints.begin() + n,
 	  objectPoints.begin() + i*n );
-
+    }
+  
   npoints.resize(nframes,n);
   N = nframes*n;
 
@@ -236,23 +296,30 @@ int StereoVision::stereoCalibrate(const float squareSize, const int ImSetSize,
   CvMat _imagePoints2 = cvMat(1, N, CV_32FC2, &points[1][0] );
   CvMat _npoints = cvMat(1, npoints.size(), CV_32S, &npoints[0] );
 
-  cvSetIdentity(&_M1);
-  cvSetIdentity(&_M2);
-  cvZero(&_D1);
-  cvZero(&_D2);
+  // cvSetIdentity(&_M1);
+  // cvSetIdentity(&_M2);
+  // cvZero(&_D1);
+  // cvZero(&_D2);
 
   // CALIBRATE THE STEREO CAMERAS
   printf("Running stereo calibration ...");
  
   cvStereoCalibrate( &_objectPoints, &_imagePoints1,
 		     &_imagePoints2, &_npoints,
-		     &_M1, &_D1, &_M2, &_D2,
+		     intrinsic_L, distortion_L,
+		     intrinsic_R, distortion_R, 
+		     // &_M1, &_D1, &_M2, &_D2,
 		     imageSize, &_R, &_T, &_E, &_F,
 		     cvTermCriteria(CV_TERMCRIT_ITER+
 				    CV_TERMCRIT_EPS, 100, 1e-5),
+		     // Fix fx/fy 
 		     CV_CALIB_FIX_ASPECT_RATIO +
+		     // Most of the time, radial distortion dominates
 		     CV_CALIB_ZERO_TANGENT_DIST +
-		     CV_CALIB_SAME_FOCAL_LENGTH );
+		     // Make sure both cameras have the same focal length
+		     CV_CALIB_SAME_FOCAL_LENGTH + 
+		     // Provide an intrinsics initialization
+		     CV_CALIB_USE_INTRINSIC_GUESS  );
 
   printf(" done\n");
 
@@ -271,17 +338,22 @@ int StereoVision::stereoCalibrate(const float squareSize, const int ImSetSize,
   CvMat _L1 = cvMat(1, N, CV_32FC3, &lines[0][0]);
   CvMat _L2 = cvMat(1, N, CV_32FC3, &lines[1][0]);
 
-  //Always work in undistorted space
+  // Always work in undistorted space
+  // During this step, intrinsics are also changed
   cvUndistortPoints( &_imagePoints1, &_imagePoints1,
-		     &_M1, &_D1, 0, &_M1 );
+		     intrinsic_L, distortion_L,
+		     0, intrinsic_L );
+		     // &_M1, &_D1, 0, &_M1 );
   cvUndistortPoints( &_imagePoints2, &_imagePoints2,
-		     &_M2, &_D2, 0, &_M2 );
+		     intrinsic_R, distortion_R,
+		     0, intrinsic_R );
+		     // &_M2, &_D2, 0, &_M2 );
   cvComputeCorrespondEpilines( &_imagePoints1, 1, &_F, &_L1 );
   cvComputeCorrespondEpilines( &_imagePoints2, 2, &_F, &_L2 );
 
   // Calculate average error
   double avgErr = 0;
-  for( i = 0; i < N; i++ )
+  for(int i = 0; i < N; i++ )
     {
       double err = fabs(points[0][i].x*lines[1][i].x +
 			points[0][i].y*lines[1][i].y + lines[1][i].z)
