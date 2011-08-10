@@ -127,8 +127,6 @@ int StereoVision::monoCalibrate(int ImSetSize, IplImage** ImSet, int lr)
       // Release memory
       cvReleaseImage(&gray_image);
     }
-      
-  //    if( successes == ImSetSize ) break;
 
   printf("successes = %d, ImSetSize=%d\n",successes,ImSetSize);
   
