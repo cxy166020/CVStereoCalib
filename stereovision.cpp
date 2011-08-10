@@ -374,7 +374,8 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
 
 
 int StereoVision::undistortImage(const char* lImName, const char* rImName, 
-				 const char* lUndistortedName, const char* rUndistortedName)
+				 const char* lUndistortedName, const char* rUndistortedName,
+				 const CvMat* newIntrinsic_L, const CvMat* newIntrinsic_R)
 {
   IplImage* lIm = cvLoadImage(lImName);
   IplImage* rIm = cvLoadImage(rImName);
@@ -382,8 +383,8 @@ int StereoVision::undistortImage(const char* lImName, const char* rImName,
   IplImage* lUndistorted = cvCreateImage(cvSize(lIm->width, lIm->height), lIm->depth, lIm->nChannels);
   IplImage* rUndistorted = cvCreateImage(cvSize(rIm->width, rIm->height), rIm->depth, rIm->nChannels);
 
-  cvUndistort2(lIm, lUndistorted, intrinsic_L, distortion_L);
-  cvUndistort2(rIm, rUndistorted, intrinsic_R, distortion_R);
+  cvUndistort2(lIm, lUndistorted, intrinsic_L, distortion_L, newIntrinsic_L);
+  cvUndistort2(rIm, rUndistorted, intrinsic_R, distortion_R, newIntrinsic_R);
 
   cvSaveImage(lUndistortedName, lUndistorted);
   cvSaveImage(rUndistortedName, rUndistorted);

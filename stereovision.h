@@ -45,7 +45,8 @@ public:
   int calibrationLoad(const char* filename);
 
   int undistortImage(const char* lImName, const char* rImName, 
-		     const char* lUndistortedName, const char* rUndistortedName);
+		     const char* lUndistortedName, const char* rUndistortedName,
+		     const CvMat* newIntrinsic_L=0, const CvMat* newIntrinsic_R=0);
 
 };
 
