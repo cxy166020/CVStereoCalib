@@ -43,6 +43,10 @@ public:
   int calibrationSave(const char* filename);
 
   int calibrationLoad(const char* filename);
+
+  int undistortImage(const char* lImName, const char* rImName, 
+		     const char* lUndistortedName, const char* rUndistortedName);
+
 };
 
 #endif // STEREOVISION_H

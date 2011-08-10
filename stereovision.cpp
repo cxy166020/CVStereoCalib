@@ -349,12 +349,10 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
   // Always work in undistorted space
   // During this step, intrinsics are also changed
   cvUndistortPoints( &_imagePoints1, &_imagePoints1,
-		     intrinsic_L, distortion_L,
-		     0, intrinsic_L );
+		     intrinsic_L, distortion_L );
 		     // &_M1, &_D1, 0, &_M1 );
   cvUndistortPoints( &_imagePoints2, &_imagePoints2,
-		     intrinsic_R, distortion_R,
-		     0, intrinsic_R );
+		     intrinsic_R, distortion_R );
 		     // &_M2, &_D2, 0, &_M2 );
   cvComputeCorrespondEpilines( &_imagePoints1, 1, &_F, &_L1 );
   cvComputeCorrespondEpilines( &_imagePoints2, 2, &_F, &_L2 );
@@ -375,25 +373,23 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
 }
 
 
-
-
-// int StereoVision::rectifyImage(const char* lImName, const char* rImName, 
-// 			       const char* lRectifiedName, const char* rRectifiedName)
-// {
-//   IplImage* lIm = cvLoadImage(lImName);
-//   IplImage* rIm = cvLoadImage(rImName);
+int StereoVision::undistortImage(const char* lImName, const char* rImName, 
+				 const char* lUndistortedName, const char* rUndistortedName)
+{
+  IplImage* lIm = cvLoadImage(lImName);
+  IplImage* rIm = cvLoadImage(rImName);
   
-//   IplImage* lRectified = cvCreateImage(cvSize(lIm->width, lIm->height), lIm->depth, lIm->nChannels);
-//   IplImage* rRectified = cvCreateImage(cvSize(rIm->width, rIm->height), rIm->depth, rIm->nChannels);
+  IplImage* lUndistorted = cvCreateImage(cvSize(lIm->width, lIm->height), lIm->depth, lIm->nChannels);
+  IplImage* rUndistorted = cvCreateImage(cvSize(rIm->width, rIm->height), rIm->depth, rIm->nChannels);
 
-//   cvRemap(lIm, lRectified, mx1, my1);
-//   cvRemap(rIm, rRectified, mx2, my2);
+  cvUndistort2(lIm, lUndistorted, intrinsic_L, distortion_L);
+  cvUndistort2(rIm, rUndistorted, intrinsic_R, distortion_R);
 
-//   cvSaveImage(lRectifiedName, lRectified);
-//   cvSaveImage(rRectifiedName, rRectified);
+  cvSaveImage(lUndistortedName, lUndistorted);
+  cvSaveImage(rUndistortedName, rUndistorted);
 
-//   return RESULT_OK;
-// }
+  return RESULT_OK;
+}
 
 int StereoVision::calibrationSave(const char* filename)
 {
