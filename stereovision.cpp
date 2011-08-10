@@ -86,16 +86,15 @@ int StereoVision::monoCalibrate(int ImSetSize, IplImage** ImSet, int lr)
 
   IplImage* image = 0;
   IplImage* gray_image = 0;
-  CvPoint2D32f* corners = new CvPoint2D32f[ cornersN ];
+  CvPoint2D32f* corners = new CvPoint2D32f[cornersN];
   int corner_count;
   int successes = 0;
   int step;
 
-  gray_image = cvCreateImage(cvGetSize(image),8,1);
-
   for( int frame=0; frame<ImSetSize; frame++ ) 
     {
       image = ImSet[frame];
+      gray_image = cvCreateImage(cvGetSize(image),8,1);
     
       int found = cvFindChessboardCorners(image, board_sz, corners, &corner_count, 
 					  CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
@@ -125,10 +124,9 @@ int StereoVision::monoCalibrate(int ImSetSize, IplImage** ImSet, int lr)
 	  successes++;
 	}
 
+      // Release memory
+      cvReleaseImage(&gray_image);
     }
-
-  // Release memory
-  cvReleaseImage(&gray_image);
       
   //    if( successes == ImSetSize ) break;
 
