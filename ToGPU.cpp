@@ -86,6 +86,8 @@ int main(int argc, char** argv)
 
   StereoVision sv;
 
+  std::cout << "Calibration file ------> " << CalibFile  << std::endl;
+
   sv.calibrationLoad(CalibFile.c_str());
 
   std::ofstream ofm;
@@ -112,14 +114,25 @@ int main(int argc, char** argv)
 			      UndistortedImNameR,
 			      OutputPath);
 
+      std::cout << "Undistorting -----> " << ImNameL[i] << std::endl
+		<< "------------------> " << ImNameR[i] << std::endl;
+
+      std::cout << "Output -----------> " << UndistortedImNameL << std::endl
+		<< "------------------> " << UndistortedImNameR << std::endl;
+
       sv.undistortImage(ImNameL[i], ImNameR[i], 
-			UndistortedImNameL.c_str(), 
-			UndistortedImNameR.c_str(),
-			Intrinsic_L, Intrinsic_R,
-			rotation, translation);
+      			UndistortedImNameL.c_str(), 
+      			UndistortedImNameR.c_str(),
+      			Intrinsic_L, Intrinsic_R,
+      			rotation, translation);
+
+      // sv.undistortImage(ImNameL[i], ImNameR[i], 
+      // 			UndistortedImNameL.c_str(), 
+      // 			UndistortedImNameR.c_str(),
+      // 			NULL, NULL, rotation, translation);
 
       FillConfig(ofm, UndistortedImNameL, UndistortedImNameR, 
-		 Intrinsic_L, Intrinsic_R, rotation, translation);
+      		 Intrinsic_L, Intrinsic_R, rotation, translation);
     }
 
   CloseConfig(ofm);
@@ -137,7 +150,7 @@ void GetUndistortedImageName(const std::string& OriginalImName,
 			     std::string& UndistortedImName,
 			     const std::string& OutputPath)
 {
-  size_t pos = OriginalImName.find_first_of(OriginalImName);
+  size_t pos = OriginalImName.find_last_of('/');
 
   if(pos == std::string::npos)
     {
@@ -145,8 +158,7 @@ void GetUndistortedImageName(const std::string& OriginalImName,
     }
   else
     {
-      UndistortedImName = OutputPath.substr(pos) + "undistorted_" + 
-	OriginalImName;
+      UndistortedImName = OutputPath + "undistorted_" + OriginalImName.substr(pos+1);
     }
 }
 
@@ -167,7 +179,7 @@ void InitConfig(std::ofstream& ofm,
   ofm.setf (ios::fixed, ios::basefield); 
 
   // Use 5 digits
-  ofm.precision(5);
+  ofm.precision(4);
 
 }
 
@@ -182,46 +194,66 @@ void FillConfig(std::ofstream& ofm,
   const int K_SIZE = 9;
   const int R_SIZE = 9;
   const int T_SIZE = 3;
+
+  size_t pos;
   
   // Left image name
-  ofm << UndistortedImNameL << '\t';
+  pos = UndistortedImNameL.find_last_of('/');
+  if(pos == std::string::npos)
+    {
+      ofm << UndistortedImNameL << ' ';
+    }
+  else
+    {
+      ofm << UndistortedImNameL.substr(pos+1) << ' ';
+    }
+
   
   // K for left image
   for(int i=0; i<K_SIZE; i++)
     {
-      ofm << Intrinsic_L->data.fl[i] << '\t';
+      ofm << Intrinsic_L->data.fl[i] << ' ';
     }
   ofm << std::endl;
 
   // R for left image, which is identity matrix
-  ofm << 1.0 << '\t' << 0.0 << '\t' << 0.0
-      << 0.0 << '\t' << 1.0 << '\t' << 0.0
-      << 0.0 << '\t' << 0.0 << '\t' << 1.0 << std::endl;
+  ofm << 1.0 << ' ' << 0.0 << ' ' << 0.0 << ' '
+      << 0.0 << ' ' << 1.0 << ' ' << 0.0 << ' '
+      << 0.0 << ' ' << 0.0 << ' ' << 1.0 << std::endl;
 
   // T for left image, which is a 0 vector
-  ofm << 0.0 << '\t' << 0.0 << '\t' << std::endl;
+  ofm << 0.0 << ' ' << 0.0 << ' ' << 0.0 << std::endl;
 
   // Right image name
-  ofm << UndistortedImNameR << '\t';
+  pos = UndistortedImNameR.find_last_of('/');
+  if(pos == std::string::npos)
+    {
+      ofm << UndistortedImNameR << ' ';
+    }
+  else
+    {
+      ofm << UndistortedImNameR.substr(pos+1) << ' ';
+    }
+
 
   // K for right image
   for(int i=0; i<K_SIZE; i++)
     {
-      ofm << Intrinsic_R->data.fl[i] << '\t';
+      ofm << Intrinsic_R->data.fl[i] << ' ';
     }
   ofm << std::endl;
 
   // R for right image
   for(int i=0; i<R_SIZE; i++)
     {
-      ofm << rotation->data.fl[i] << '\t';
+      ofm << rotation->data.fl[i] << ' ';
     }
   ofm << std::endl;
 
   // T for right image
   for(int i=0; i<T_SIZE; i++)
     {
-      ofm << translation->data.fl[i] << '\t';
+      ofm << translation->data.fl[i] << ' ';
     }
   ofm << std::endl;
 }

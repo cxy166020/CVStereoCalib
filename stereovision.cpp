@@ -345,7 +345,7 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
 		     // Most of the time, radial distortion dominates
 		     // CV_CALIB_ZERO_TANGENT_DIST +
 		     // Make sure both cameras have the same focal length
-		     // CV_CALIB_SAME_FOCAL_LENGTH + 
+		     CV_CALIB_SAME_FOCAL_LENGTH + 
 		     // Provide an intrinsics initialization
 		     CV_CALIB_USE_INTRINSIC_GUESS  );
 
@@ -404,11 +404,21 @@ int StereoVision::undistortImage(const char* lImName, const char* rImName,
   IplImage* lUndistorted = cvCreateImage(cvSize(lIm->width, lIm->height), lIm->depth, lIm->nChannels);
   IplImage* rUndistorted = cvCreateImage(cvSize(rIm->width, rIm->height), rIm->depth, rIm->nChannels);
 
-  cvUndistort2(lIm, lUndistorted, intrinsic_L, distortion_L, newIntrinsic_L);
-  cvUndistort2(rIm, rUndistorted, intrinsic_R, distortion_R, newIntrinsic_R);
+  cvUndistort2(lIm, lUndistorted, intrinsic_L, distortion_L);
+  cvUndistort2(rIm, rUndistorted, intrinsic_R, distortion_R);
 
   cvSaveImage(lUndistortedName, lUndistorted);
   cvSaveImage(rUndistortedName, rUndistorted);
+
+  if(newIntrinsic_L)
+    {
+      cvCopy(intrinsic_L, newIntrinsic_L);
+    }
+
+  if(newIntrinsic_R)
+    {
+      cvCopy(intrinsic_R, newIntrinsic_R);
+    }
 
   if(newRotation)
     {
