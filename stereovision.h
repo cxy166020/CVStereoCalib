@@ -28,6 +28,8 @@ private:
   CvMat *intrinsic_L,  *intrinsic_R; 
   CvMat *distortion_L, *distortion_R;
 
+  CvMat *rotation, *translation;
+
 public:
   StereoVision();
   ~StereoVision();

@@ -4,30 +4,23 @@ LDFLAGS = -lopencv_highgui -lopencv_core -lopencv_calib3d
 
 
 PROG = stereoCalib
-RECT = rect
+UDIS = undistort
 SCAL = singleCalib
 HDRS = stereovision.h CommandlineUtils.h
 SRCS = main.cpp stereovision.cpp CommandlineUtils.cpp
 
 OBJS = main.o stereovision.o CommandlineUtils.o
-ROBJ = rectify.o stereovision.o CommandlineUtils.o
-SOBJ = singleCalib.o CommandlineUtils.o
+UOBJ = undistort.o stereovision.o CommandlineUtils.o
 
-PROJECT : $(PROG) # $(RECT) $(SCAL)
+PROJECT : $(PROG) $(UDIS)
 
-$(RECT) : $(ROBJ)
-	$(CC) $(LDFLAGS) $^ -o $@
-
-$(SCAL) : $(SOBJ)
+$(UDIS) : $(UOBJ)
 	$(CC) $(LDFLAGS) $^ -o $@
 
 $(PROG) : $(OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
 
-singleCalib.o : singleCalib.cpp
-	$(CC) $(CFLAGS) $^
-
-rectify.o : rectify.cpp
+undistort.o : undistort.cpp
 	$(CC) $(CFLAGS) $^
 
 main.o : main.cpp
@@ -41,4 +34,4 @@ CommandlineUtils.o : CommandlineUtils.h CommandlineUtils.cpp
 
 
 clean:
-	rm *.o $(PROG) $(RECT)
+	rm *.o $(PROG) $(UDIS)

@@ -24,11 +24,11 @@ int main(int argc, char** argv)
   char** CalibFile = ArgList.GetArgsByOption("-c", CalibSize);
 
   // Get input image size
-  int SizeDim = 0;
-  char** ImSize = ArgList.GetArgsByOption("-s", SizeDim);
+  // int SizeDim = 0;
+  // char** ImSize = ArgList.GetArgsByOption("-s", SizeDim);
   
-  int ImWidth  = atoi(ImSize[0]);
-  int ImHeight = atoi(ImSize[1]);
+  // int ImWidth  = atoi(ImSize[0]);
+  // int ImHeight = atoi(ImSize[1]);
   
   char* lInput  = InputImName[0];
   char* rInput  = InputImName[1];
@@ -48,11 +48,14 @@ int main(int argc, char** argv)
       return 0;
     }
 
-  StereoVision sv(ImWidth, ImHeight);
+  StereoVision sv;
 
   sv.calibrationLoad(CalibFile[0]);
-  
-  sv.rectifyImage(lInput, rInput, lOutput, rOutput);
+
+  sv.undistortImage(lInput, rInput, lOutput, rOutput);
   
   return 0;
 }
+
+
+
