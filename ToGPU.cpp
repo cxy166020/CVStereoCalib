@@ -145,7 +145,7 @@ void GetUndistortedImageName(const std::string& OriginalImName,
     }
   else
     {
-      UndistortedImName = OutputPath.substr(pos+1) + "undistorted_" + 
+      UndistortedImName = OutputPath.substr(pos) + "undistorted_" + 
 	OriginalImName;
     }
 }
