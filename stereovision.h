@@ -48,7 +48,8 @@ public:
 
   int undistortImage(const char* lImName, const char* rImName, 
 		     const char* lUndistortedName, const char* rUndistortedName,
-		     const CvMat* newIntrinsic_L=0, const CvMat* newIntrinsic_R=0);
+		     CvMat* newIntrinsic_L=NULL, CvMat* newIntrinsic_R=NULL,
+		     CvMat* newRotation=NULL, CvMat* newTranslation=NULL);
 
 };
 

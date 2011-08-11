@@ -13,6 +13,9 @@ StereoVision::StereoVision()
   intrinsic_R = NULL; 
   distortion_L = NULL;
   distortion_R = NULL;
+
+  rotation = NULL;
+  translation = NULL;
 }
 
 StereoVision::~StereoVision()
@@ -40,6 +43,18 @@ StereoVision::~StereoVision()
       cvReleaseMat(&distortion_R);
       distortion_R = NULL;
     }
+
+  if(rotation)
+    {
+      cvReleaseMat(&rotation);
+      rotation = NULL;
+    }
+  
+  if(translation)
+    {
+      cvReleaseMat(&translation);
+      translation = NULL;
+    }
 }
 
 
@@ -65,6 +80,12 @@ void StereoVision::calibrationInit(int imageWidth,int imageHeight,
 
   if(!distortion_R)
     distortion_R = cvCreateMat(4,1,CV_32FC1);
+
+  if(!rotation)
+    rotation = cvCreateMat(3,3,CV_32FC1);
+  
+  if(!translation)
+    translation = cvCreateMat(3,1,CV_32FC1);
 }
 
 // User has to manage the memory of intrinsics and distortions 
@@ -95,7 +116,7 @@ int StereoVision::monoCalibrate(int ImSetSize, IplImage** ImSet, int lr)
     {
       image = ImSet[frame];
       gray_image = cvCreateImage(cvGetSize(image),8,1);
-    
+      
       int found = cvFindChessboardCorners(image, board_sz, corners, &corner_count, 
 					  CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
 
@@ -198,13 +219,14 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
   
   // ARRAY AND VECTOR STORAGE:
   // double M1[3][3], M2[3][3], D1[5], D2[5];
-  double R[3][3], T[3], E[3][3], F[3][3];
+  // double R[3][3], T[3];
+  double E[3][3], F[3][3];
   // CvMat _M1 = cvMat(3, 3, CV_64F, M1 );
   // CvMat _M2 = cvMat(3, 3, CV_64F, M2 );
   // CvMat _D1 = cvMat(1, 5, CV_64F, D1 );
   // CvMat _D2 = cvMat(1, 5, CV_64F, D2 );
-  CvMat _R = cvMat(3, 3, CV_64F, R );
-  CvMat _T = cvMat(3, 1, CV_64F, T );
+  // CvMat _R = cvMat(3, 3, CV_64F, R );
+  // CvMat _T = cvMat(3, 1, CV_64F, T );
   CvMat _E = cvMat(3, 3, CV_64F, E );
   CvMat _F = cvMat(3, 3, CV_64F, F );
   
@@ -254,7 +276,7 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
 	    }
 
 	  if( result )
-	      break;
+	    break;
         }
 
       N = pts.size();
@@ -276,7 +298,6 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
         }
     }
   
-  
   // HARVEST CHESSBOARD 3D OBJECT POINT LIST:
   nframes = active[0].size();//Number of good chessboads found
   objectPoints.resize(nframes*n);
@@ -293,7 +314,7 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
   for(int i=1; i<nframes; i++ )
     {
       copy( objectPoints.begin(), objectPoints.begin() + n,
-	  objectPoints.begin() + i*n );
+	    objectPoints.begin() + i*n );
     }
   
   npoints.resize(nframes,n);
@@ -304,10 +325,6 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
   CvMat _imagePoints2 = cvMat(1, N, CV_32FC2, &points[1][0] );
   CvMat _npoints = cvMat(1, npoints.size(), CV_32S, &npoints[0] );
 
-  // cvSetIdentity(&_M1);
-  // cvSetIdentity(&_M2);
-  // cvZero(&_D1);
-  // cvZero(&_D2);
 
   // CALIBRATE THE STEREO CAMERAS
   printf("Running stereo calibration ...");
@@ -317,7 +334,9 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
 		     intrinsic_L, distortion_L,
 		     intrinsic_R, distortion_R, 
 		     // &_M1, &_D1, &_M2, &_D2,
-		     imageSize, &_R, &_T, &_E, &_F,
+		     imageSize, rotation, translation,
+		     // &_R, &_T, 
+		     &_E, &_F,
 		     cvTermCriteria(CV_TERMCRIT_ITER+
 				    CV_TERMCRIT_EPS, 100, 1e-5),
 		     // Fix fx/fy 
@@ -351,10 +370,10 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
   // During this step, intrinsics are also changed
   cvUndistortPoints( &_imagePoints1, &_imagePoints1,
 		     intrinsic_L, distortion_L );
-		     // &_M1, &_D1, 0, &_M1 );
+  // &_M1, &_D1, 0, &_M1 );
   cvUndistortPoints( &_imagePoints2, &_imagePoints2,
 		     intrinsic_R, distortion_R );
-		     // &_M2, &_D2, 0, &_M2 );
+  // &_M2, &_D2, 0, &_M2 );
   cvComputeCorrespondEpilines( &_imagePoints1, 1, &_F, &_L1 );
   cvComputeCorrespondEpilines( &_imagePoints2, 2, &_F, &_L2 );
 
@@ -376,7 +395,8 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
 
 int StereoVision::undistortImage(const char* lImName, const char* rImName, 
 				 const char* lUndistortedName, const char* rUndistortedName,
-				 const CvMat* newIntrinsic_L, const CvMat* newIntrinsic_R)
+				 CvMat* newIntrinsic_L, CvMat* newIntrinsic_R,
+				 CvMat* newRotation, CvMat* newTranslation)
 {
   IplImage* lIm = cvLoadImage(lImName);
   IplImage* rIm = cvLoadImage(rImName);
@@ -390,6 +410,16 @@ int StereoVision::undistortImage(const char* lImName, const char* rImName,
   cvSaveImage(lUndistortedName, lUndistorted);
   cvSaveImage(rUndistortedName, rUndistorted);
 
+  if(newRotation)
+    {
+      cvCopy(rotation, newRotation);
+    }
+
+  if(newTranslation)
+    {
+      cvCopy(translation, newTranslation);
+    }
+
   return RESULT_OK;
 }
 
@@ -401,6 +431,8 @@ int StereoVision::calibrationSave(const char* filename)
   if(!fwrite(intrinsic_R->data.fl,sizeof(float),intrinsic_R->rows*intrinsic_R->cols,f)) return RESULT_FAIL;
   if(!fwrite(distortion_L->data.fl,sizeof(float),distortion_L->rows*distortion_L->cols,f)) return RESULT_FAIL;
   if(!fwrite(distortion_R->data.fl,sizeof(float),distortion_R->rows*distortion_R->cols,f)) return RESULT_FAIL;
+  if(!fwrite(rotation->data.fl,sizeof(float),rotation->rows*rotation->cols,f)) return RESULT_FAIL;
+  if(!fwrite(translation->data.fl,sizeof(float),translation->rows*translation->cols,f)) return RESULT_FAIL;
   fclose(f);
   return RESULT_OK;
 }
@@ -420,6 +452,12 @@ int StereoVision::calibrationLoad(const char* filename)
   if(!distortion_R)
     distortion_R = cvCreateMat(4,1,CV_32FC1);
 
+  if(!rotation)
+    rotation = cvCreateMat(3,3,CV_32FC1);
+
+  if(!translation)
+    translation = cvCreateMat(3,1,CV_32FC1);
+
 
   FILE* f =  fopen(filename,"rb");
   if(!f) return RESULT_FAIL;
@@ -427,6 +465,8 @@ int StereoVision::calibrationLoad(const char* filename)
   if(!fread(intrinsic_R->data.fl,sizeof(float),intrinsic_R->rows*intrinsic_R->cols,f)) return RESULT_FAIL;
   if(!fread(distortion_L->data.fl,sizeof(float),distortion_L->rows*distortion_L->cols,f)) return RESULT_FAIL;
   if(!fread(distortion_R->data.fl,sizeof(float),distortion_R->rows*distortion_R->cols,f)) return RESULT_FAIL;
+  if(!fread(rotation->data.fl,sizeof(float),rotation->rows*rotation->cols,f)) return RESULT_FAIL;
+  if(!fread(translation->data.fl,sizeof(float),translation->rows*translation->cols,f)) return RESULT_FAIL;
   fclose(f);
 
   return RESULT_OK;
