@@ -9,7 +9,10 @@ for i=1:NumOfIm
     
     [height width channel] = size(pic);
     
-    imwrite(imresize(pic(:, 1:width/2, :),     [height/2 width/2]), ['l_' im(i).name]);
-    imwrite(imresize(pic(:, width/2+1:end, :), [height/2 width/2]), ['r_' im(i).name]);
+    left  = imresize(pic(:, 1:width/2, :), [height/2 width/2]);
+    right = imresize(pic(:, width/2+1:end, :), [height/2 width/2]);
+    
+    imwrite(left,  ['l_' im(i).name]);
+    imwrite(right, ['r_' im(i).name]);
     
 end
