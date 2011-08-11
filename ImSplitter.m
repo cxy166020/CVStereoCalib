@@ -17,15 +17,15 @@ for i=1:NumOfIm
     [height, width, chanel] = size(pic); %#ok<NASGU>
     
     if CalibWidth~=0 && CalibHeight~=0
-        CalibWidth = CalibWidth/2;
-        CalibHeight = CalibHeight/2;
+        ResizeWidth = CalibWidth/2;
+        ResizeHeight = CalibHeight/2;
     else
-        CalibWidth = width/2;
-        CalibHeight = height/2;
+        ResizeWidth = width/2;
+        ResizeHeight = height/2;
     end
     
-    left  = imresize(pic(:, 1:width/2, :), [CalibHeight CalibWidth]);
-    right = imresize(pic(:, width/2+1:end, :), [CalibHeight CalibWidth]);
+    left  = imresize(pic(:, 1:width/2, :), [ResizeHeight ResizeWidth]);
+    right = imresize(pic(:, width/2+1:end, :), [ResizeHeight ResizeWidth]);
     
     imwrite(left,  ['l_' im(i).name]);
     imwrite(right, ['r_' im(i).name]);
