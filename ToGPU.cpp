@@ -170,7 +170,7 @@ void InitConfig(std::ofstream& ofm,
   ofm.open(ConfigName.c_str(), std::ios::trunc);
   
   // Number of images
-  ofm << ImSetSize  << std::endl;
+  ofm << ImSetSize*2  << std::endl;
 
   // Scale
   ofm << 1.0 << std::endl;
