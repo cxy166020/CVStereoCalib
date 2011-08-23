@@ -341,7 +341,7 @@ int StereoVision::stereoCalibrate( const float squareSize, const int ImSetSize,
 				    CV_TERMCRIT_EPS, 100, 1e-5),
 		     // Fix fx/fy 
 		     CV_CALIB_FIX_ASPECT_RATIO +
-		     // CV_CALIB_FIX_PRINCIPAL_POINT + 
+		     CV_CALIB_FIX_PRINCIPAL_POINT + 
 		     // Most of the time, radial distortion dominates
 		     // CV_CALIB_ZERO_TANGENT_DIST +
 		     // Make sure both cameras have the same focal length
